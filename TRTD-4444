@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRTD-4444: The Road To Death</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700;900&display=swap');
+
+        :root {
+            --blood-red: #8b0000;
+            --dark-gray: #1a1a1a;
+            --zinc-900: #18181b;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #050505;
+            color: #e0e0e0;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        /* Blood Splatter Effect */
+        .blood-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://www.transparenttextures.com/patterns/blood-stain.png');
+            pointer-events: none;
+            opacity: 0.15;
+            z-index: 100;
+        }
+
+        .train-container {
+            background: linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)), 
+                        url('https://images.unsplash.com/photo-1515165599611-0b5009bbe974?q=80&w=2070&auto=format&fit=crop');
+            background-size: cover;
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+
+        .card {
+            background: rgba(30, 30, 30, 0.9);
+            border-left: 4px solid var(--blood-red);
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(139, 0, 0, 0.4);
+        }
+
+        .btn-blood {
+            background-color: var(--blood-red);
+            color: white;
+            transition: all 0.2s;
+        }
+
+        .btn-blood:hover {
+            background-color: #660000;
+            box-shadow: 0 0 15px var(--blood-red);
+        }
+
+        /* Shake animation for emergency */
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+
+        .shake { animation: shake 0.1s infinite; }
+
+        .hidden { display: none !important; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: #050505; }
+        ::-webkit-scrollbar-thumb { background: var(--blood-red); }
+    </style>
+</head>
+<body>
+    <div class="blood-overlay"></div>
+
+    <!-- Background Audio -->
+    <audio id="bgm" loop preload="auto">
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Intro / Entry Section -->
+    <div id="intro-screen" class="flex flex-col items-center justify-center min-h-screen p-6 text-center z-50">
+        <h1 class="text-5xl md:text-7xl font-black text-red-700 mb-2 tracking-tighter">TRTD-4444</h1>
+        <p class="text-lg md:text-xl italic text-gray-500 mb-8">the road to death</p>
+        
+        <div class="max-w-md w-full bg-zinc-900 p-8 rounded-lg border border-red-900 shadow-2xl">
+            <div id="login-tabs" class="flex mb-6 space-x-2">
+                <button onclick="switchLogin('user')" id="tab-user" class="flex-1 py-2 bg-red-900 text-white rounded font-bold">승객 탑승</button>
+                <button onclick="switchLogin('mc')" id="tab-mc" class="flex-1 py-2 bg-zinc-800 text-gray-400 rounded font-bold">MC 탑승</button>
+            </div>
+
+            <!-- 승객 폼 -->
+            <div id="user-form" class="space-y-4">
+                <input type="text" id="user-name" placeholder="닉네임을 입력하십시오..." class="w-full p-3 bg-black border border-zinc-700 rounded focus:border-red-600 outline-none text-white">
+                <button onclick="enterTrain('user')" class="w-full btn-blood py-3 font-bold rounded text-lg">열차 진입</button>
+            </div>
+
+            <!-- MC 폼 -->
+            <div id="mc-form" class="space-y-4 hidden">
+                <input type="password" id="mc-pw" placeholder="비밀번호 입력" class="w-full p-3 bg-black border border-zinc-700 rounded focus:border-red-600 outline-none text-white">
+                <input type="text" id="mc-name" placeholder="MC 닉네임 입력" class="w-full p-3 bg-black border border-zinc-700 rounded focus:border-red-600 outline-none text-white">
+                <button onclick="enterTrain('mc')" class="w-full bg-blue-900 hover:bg-blue-800 py-3 font-bold rounded text-lg">관리자 권한 진입</button>
+            </div>
+        </div>
+
+        <div class="mt-12 max-w-xl text-gray-500 text-sm leading-relaxed px-4">
+            "세상에 좀비가 창궐했다... 이 이야기는 전세계랑 이어진 특수한 열차 TRTD-4444에 탑승한 승객 여러분의 사투입니다."
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="main-app" class="hidden train-container pb-24">
+        <!-- Navigation -->
+        <nav class="sticky top-0 z-40 bg-black/90 border-b border-red-900 p-4 flex justify-between items-center shadow-lg">
+            <div class="flex items-center space-x-2">
+                <span class="text-red-600 font-black text-xl">TRTD-4444</span>
+                <span id="role-badge" class="px-2 py-0.5 text-[10px] rounded bg-gray-700 font-bold">PASSENGER</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button onclick="toggleAudio()" class="text-gray-400 hover:text-white transition-all">
+                    <i id="audio-icon" class="fas fa-volume-mute text-xl"></i>
+                </button>
+                <div id="current-user-display" class="hidden sm:block text-sm font-bold text-red-500"></div>
+                <button onclick="location.reload()" class="text-xs text-gray-600 hover:text-red-500 underline">로그아웃</button>
+            </div>
+        </nav>
+
+        <main class="max-w-4xl mx-auto p-4 space-y-8">
+            
+            <!-- Notice & Missions -->
+            <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-zinc-900/80 p-4 rounded border border-zinc-800">
+                    <h2 class="text-red-600 font-bold mb-3 border-b border-red-900 pb-1 flex items-center">
+                        <i class="fas fa-bullhorn mr-2"></i>최근 공지
+                    </h2>
+                    <div id="notice-list" class="space-y-2 text-sm h-32 overflow-y-auto pr-2"></div>
+                </div>
+                <div class="bg-zinc-900/80 p-4 rounded border border-zinc-800">
+                    <h2 class="text-yellow-600 font-bold mb-3 border-b border-yellow-900 pb-1 flex items-center">
+                        <i class="fas fa-tasks mr-2"></i>활성 미션
+                    </h2>
+                    <div id="mission-list" class="space-y-2 text-sm h-32 overflow-y-auto pr-2"></div>
+                </div>
+            </section>
+
+            <!-- Settings -->
+            <section id="setting" class="bg-zinc-900/50 p-6 rounded-lg border border-red-900">
+                <h2 class="text-2xl font-bold text-white mb-4">세계관 설정</h2>
+                <div class="space-y-4 text-gray-300 text-sm leading-relaxed">
+                    <p class="p-4 bg-black/40 border-l-2 border-red-600 italic">
+                        "좀비 바이러스가 세상을 덮친 후... 유일한 희망이자 감옥인 TRTD-4444 열차. 당신의 선택이 생존을 결정합니다."
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="p-3 bg-zinc-800/50 rounded border border-zinc-700">
+                            <h3 class="font-bold text-red-500 underline mb-1">다이아 바이오</h3>
+                            <p>생명 변이 프로젝트로 도시를 망친 주범이자 사태의 시작점.</p>
+                        </div>
+                        <div class="p-3 bg-zinc-800/50 rounded border border-zinc-700">
+                            <h3 class="font-bold text-red-500 underline mb-1">면역자</h3>
+                            <p>바이러스에 저항력을 가진 신체 능력자 (D~SS급).</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Characters -->
+            <section id="characters">
+                <h2 class="text-2xl font-bold text-white mb-6 flex items-center">
+                    <i class="fas fa-users-cog mr-3 text-red-600"></i>탑승 주요 인물
+                </h2>
+                <div id="char-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+            </section>
+
+            <!-- MC Panel -->
+            <section id="mc-panel" class="hidden space-y-6 bg-blue-950/20 p-6 rounded-lg border border-blue-700">
+                <h2 class="text-2xl font-bold text-blue-400 border-b border-blue-800 pb-2">MC Control Authority</h2>
+                <div class="bg-black/40 p-4 rounded border border-blue-900">
+                    <h3 class="font-bold mb-2 text-sm">공지 및 미션 관리</h3>
+                    <div class="flex flex-col space-y-2">
+                        <input type="text" id="mc-notice-title" placeholder="제목" class="bg-zinc-900 border border-zinc-700 p-2 rounded text-sm text-white">
+                        <textarea id="mc-notice-content" placeholder="내용" class="bg-zinc-900 border border-zinc-700 p-2 rounded h-20 text-sm text-white"></textarea>
+                        <div class="flex space-x-2">
+                            <button onclick="publishNotice()" class="flex-1 bg-blue-600 py-2 rounded font-bold hover:bg-blue-500">공지 발행</button>
+                            <button onclick="triggerEvent()" class="flex-1 bg-red-700 py-2 rounded font-bold animate-pulse">돌발 이벤트</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Communication Log -->
+            <section id="chat-section" class="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden flex flex-col h-[500px] shadow-2xl">
+                <div class="p-3 bg-zinc-800 border-b border-zinc-700 font-bold flex justify-between items-center text-sm">
+                    <span><i class="fas fa-satellite-dish mr-2 text-green-500"></i>열차 통신망</span>
+                    <span id="player-count" class="text-[11px] text-gray-400">접속 확인 중...</span>
+                </div>
+                <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-2 text-sm bg-black/20"></div>
+                <div class="p-3 bg-black/40 flex space-x-2 border-t border-zinc-800">
+                    <input type="text" id="chat-input" placeholder="메시지 입력..." class="flex-1 bg-zinc-900 border border-zinc-700 p-2 rounded text-sm outline-none focus:border-red-600 text-white">
+                    <button onclick="sendMessage()" class="btn-blood px-6 rounded font-bold text-sm">전송</button>
+                </div>
+            </section>
+
+            <!-- Roster -->
+            <section id="passenger-list" class="bg-zinc-900/50 p-4 rounded-lg border border-zinc-800">
+                <h2 class="text-lg font-bold mb-3"><i class="fas fa-id-card mr-2 text-red-600"></i>실시간 탑승자</h2>
+                <div id="roster" class="flex flex-wrap gap-2 text-xs"></div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="fixed bottom-0 left-0 w-full bg-black/95 border-t border-red-900 p-2 grid grid-cols-4 gap-1 z-50">
+            <button onclick="scrollToId('setting')" class="flex flex-col items-center p-2 text-zinc-400 hover:text-white"><i class="fas fa-book-open"></i><span class="text-[10px] mt-1">설정</span></button>
+            <button onclick="scrollToId('characters')" class="flex flex-col items-center p-2 text-zinc-400 hover:text-white"><i class="fas fa-users"></i><span class="text-[10px] mt-1">인물</span></button>
+            <button onclick="scrollToId('chat-section')" class="flex flex-col items-center p-2 text-zinc-400 hover:text-white"><i class="fas fa-comment-dots"></i><span class="text-[10px] mt-1">통신</span></button>
+            <button onclick="scrollToId('roster')" class="flex flex-col items-center p-2 text-zinc-400 hover:text-white"><i class="fas fa-list"></i><span class="text-[10px] mt-1">명단</span></button>
+        </footer>
+    </div>
+
+    <script>
+        // --- Configuration ---
+        const MASTER_PASSWORD = "zutefcdwt435!";
+        let currentUser = null;
+        let isMC = false;
+        let audioPlaying = false;
+
+        const characters = [
+            { id: 1, name: "김진형", team: "운영진", job: "기관사", age: 37, stats: "C", power: "권능/설득", desc: "열차의 총책임자." },
+            { id: 2, name: "유진성", team: "탐사대", job: "검술달인", age: 19, stats: "SS", power: "바람의 검", desc: "좀비를 베는 천재 검사." },
+            { id: 3, name: "이예현", team: "운영진", job: "요리사", age: 29, stats: "B", power: "회복 요리", desc: "주방칸 총책임자." },
+            { id: 4, name: "마석형", team: "탐사대", job: "예비 아빠", age: 32, stats: "SS", power: "신체강화", desc: "세계관 최강 근력." },
+            { id: 8, name: "창준섭", team: "어금니", job: "살인마", age: 25, stats: "S", power: "흑안개", desc: "희열을 느끼는 절대악." },
+            { id: 11, name: "우현진", team: "어금니", job: "보스", age: 34, stats: "SS", power: "중력 제어", desc: "압도적인 무력의 소유자." }
+        ];
+
+        let appData = {
+            notices: JSON.parse(localStorage.getItem('trtd_notices')) || [],
+            logs: JSON.parse(localStorage.getItem('trtd_logs')) || [],
+            passengers: JSON.parse(localStorage.getItem('trtd_passengers')) || []
+        };
+
+        // --- Auth Logic ---
+        function switchLogin(type) {
+            const userTab = document.getElementById('tab-user');
+            const mcTab = document.getElementById('tab-mc');
+            const userForm = document.getElementById('user-form');
+            const mcForm = document.getElementById('mc-form');
+
+            if (type === 'user') {
+                userTab.className = "flex-1 py-2 bg-red-900 text-white rounded font-bold";
+                mcTab.className = "flex-1 py-2 bg-zinc-800 text-gray-400 rounded font-bold";
+                userForm.classList.remove('hidden');
+                mcForm.classList.add('hidden');
+            } else {
+                mcTab.className = "flex-1 py-2 bg-red-900 text-white rounded font-bold";
+                userTab.className = "flex-1 py-2 bg-zinc-800 text-gray-400 rounded font-bold";
+                mcForm.classList.remove('hidden');
+                userForm.classList.add('hidden');
+            }
+        }
+
+        function enterTrain(type) {
+            const userNameInput = document.getElementById('user-name');
+            const mcNameInput = document.getElementById('mc-name');
+            const mcPwInput = document.getElementById('mc-pw');
+
+            let name = "";
+
+            if (type === 'user') {
+                name = userNameInput.value.trim();
+                if (!name) { alert("닉네임을 입력해 주세요."); return; }
+                isMC = false;
+            } else {
+                name = mcNameInput.value.trim();
+                const pw = mcPwInput.value.trim();
+                if (!name) { alert("MC 닉네임을 입력해 주세요."); return; }
+                if (pw !== MASTER_PASSWORD) { alert("비밀번호가 일치하지 않습니다."); return; }
+                isMC = true;
+            }
+
+            currentUser = name;
+            
+            // UI Transition
+            document.getElementById('intro-screen').classList.add('hidden');
+            document.getElementById('main-app').classList.remove('hidden');
+            document.getElementById('current-user-display').innerText = `${currentUser} 님`;
+            
+            if (isMC) {
+                document.getElementById('role-badge').innerText = "MC / GM";
+                document.getElementById('role-badge').className = "px-2 py-0.5 text-[10px] rounded bg-blue-700 text-white font-bold";
+                document.getElementById('mc-panel').classList.remove('hidden');
+            }
+
+            // Roster Update
+            if (!appData.passengers.some(p => p.name === currentUser)) {
+                appData.passengers.push({ name: currentUser, type: isMC ? 'MC' : 'USER' });
+            }
+
+            addLog(`[시스템] ${currentUser}님이 열차에 탑승했습니다.`, 'system');
+            toggleAudio(true); 
+            saveData();
+            renderAll();
+        }
+
+        // --- Render Logic ---
+        function renderAll() {
+            renderNotices();
+            renderCharacters();
+            renderLogs();
+            renderRoster();
+        }
+
+        function renderNotices() {
+            const list = document.getElementById('notice-list');
+            list.innerHTML = appData.notices.length ? '' : '<p class="text-zinc-600 italic">공지사항이 없습니다.</p>';
+            appData.notices.slice().reverse().forEach(n => {
+                list.innerHTML += `<div class="p-2 border-b border-zinc-800"><span class="text-red-500 font-bold">[공지]</span> ${n.title}<br><span class="text-[11px] text-gray-400">${n.content}</span></div>`;
+            });
+        }
+
+        function renderCharacters() {
+            const grid = document.getElementById('char-grid');
+            grid.innerHTML = '';
+            characters.forEach(c => {
+                grid.innerHTML += `
+                    <div class="card p-4 rounded text-sm bg-zinc-900/60 border-l-4 border-red-700">
+                        <div class="flex justify-between items-start mb-1">
+                            <h3 class="font-bold text-red-500 text-lg">${c.name}</h3>
+                            <span class="text-[9px] bg-red-900/30 px-1 rounded">${c.team}</span>
+                        </div>
+                        <p class="text-[11px] text-gray-500 mb-2">${c.job} / ${c.age}세 / 전력: ${c.stats}</p>
+                        <p class="text-[12px] text-gray-300 italic">"${c.desc}"</p>
+                    </div>
+                `;
+            });
+        }
+
+        function renderLogs() {
+            const box = document.getElementById('chat-messages');
+            box.innerHTML = '';
+            appData.logs.slice(-50).forEach(log => {
+                let color = "text-gray-300";
+                if (log.type === 'system') color = "text-yellow-500 font-bold";
+                if (log.type === 'mc') color = "text-blue-400 font-bold";
+                if (log.type === 'event') color = "text-red-500 font-black animate-pulse uppercase";
+
+                box.innerHTML += `<div class="${color} mb-1"><span class="text-[10px] text-gray-600 mr-2">${log.time}</span>${log.sender ? `[${log.sender}] ` : ''}${log.msg}</div>`;
+            });
+            box.scrollTop = box.scrollHeight;
+            document.getElementById('player-count').innerText = `접속: ${appData.passengers.length}명`;
+        }
+
+        function renderRoster() {
+            const div = document.getElementById('roster');
+            div.innerHTML = '';
+            appData.passengers.forEach(p => {
+                div.innerHTML += `<span class="px-2 py-1 bg-zinc-800 rounded border border-zinc-700">${p.type === 'MC' ? '👑' : '👤'} ${p.name}</span>`;
+            });
+        }
+
+        // --- Interaction ---
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const msg = input.value.trim();
+            if (!msg) return;
+            
+            const time = new Date().toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            appData.logs.push({ time, msg, sender: currentUser, type: isMC ? 'mc' : 'user' });
+            input.value = '';
+            saveData();
+            renderLogs();
+        }
+
+        function publishNotice() {
+            const title = document.getElementById('mc-notice-title').value.trim();
+            const content = document.getElementById('mc-notice-content').value.trim();
+            if (!title) return;
+
+            appData.notices.push({ title, content });
+            addLog(`[공지] ${title}`, 'system');
+            saveData();
+            renderAll();
+            document.getElementById('mc-notice-title').value = '';
+            document.getElementById('mc-notice-content').value = '';
+        }
+
+        function triggerEvent() {
+            const title = document.getElementById('mc-notice-title').value.trim() || "비상 사태 발생";
+            addLog(`🚨 ${title} 🚨`, 'event');
+            
+            // 1초 동안만 흔들림 효과 적용
+            document.body.classList.add('shake');
+            setTimeout(() => {
+                document.body.classList.remove('shake');
+            }, 1000); 
+            
+            renderLogs();
+        }
+
+        function addLog(msg, type) {
+            const time = new Date().toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            appData.logs.push({ time, msg, type });
+            renderLogs();
+        }
+
+        function toggleAudio(force = false) {
+            const audio = document.getElementById('bgm');
+            const icon = document.getElementById('audio-icon');
+            audio.volume = 0.4;
+
+            if (force || !audioPlaying) {
+                audio.play().then(() => {
+                    audioPlaying = true;
+                    icon.className = "fas fa-volume-up text-red-500 animate-pulse";
+                }).catch(() => {
+                    audioPlaying = false;
+                    icon.className = "fas fa-volume-mute";
+                });
+            } else {
+                audio.pause();
+                audioPlaying = false;
+                icon.className = "fas fa-volume-mute";
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('trtd_notices', JSON.stringify(appData.notices));
+            localStorage.setItem('trtd_logs', JSON.stringify(appData.logs));
+            localStorage.setItem('trtd_passengers', JSON.stringify(appData.passengers));
+        }
+
+        function scrollToId(id) {
+            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Keyboard support
+        document.getElementById('chat-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+        document.getElementById('user-name').addEventListener('keypress', (e) => { if (e.key === 'Enter') enterTrain('user'); });
+        document.getElementById('mc-pw').addEventListener('keypress', (e) => { if (e.key === 'Enter') enterTrain('mc'); });
+    </script>
+</body>
+</html>
+
